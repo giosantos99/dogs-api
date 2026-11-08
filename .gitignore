@@ -1,0 +1,24 @@
+
+# Dependências
+node_modules/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Imagens enviadas pelos usuários
+src/uploads/*
+!src/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
