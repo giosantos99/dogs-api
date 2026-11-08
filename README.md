@@ -257,7 +257,7 @@ As rotas de autenticação e recuperação utilizam rate limiting para reduzir t
 
 Este backend foi desenvolvido para integração com o projeto Dogs em React.
 
-**Repositório frontend:** [Link App](https://github.com/giosantos99/dogs).
+**Repositório frontend:** [Dogs App](https://github.com/giosantos99/dogs).
 
 **API online:** [Adicionar link após o deploy]
 
