@@ -1,32 +1,53 @@
 # 🐶 Dogs API — API REST com Node.js e MongoDB
 
-API REST desenvolvida com Node.js, Express e MongoDB para fornecer os recursos de uma rede social para cachorros.
+API REST desenvolvida com **Node.js, Express e MongoDB**, responsável pelas funcionalidades de uma rede social para compartilhamento de fotos de cachorros.
 
 O projeto foi criado para substituir a API utilizada originalmente no projeto Dogs do curso de React da Origamid, permitindo desenvolver e integrar um backend próprio.
+
+### 🌐 Projeto Online
+
+- **Frontend:** [Dogs Social](https://app-dogs-social.vercel.app/)
+- **API:** [Dogs API](https://dogs-api-bn0r.onrender.com/)
+- **Repositório do frontend:** [Dogs — React](https://github.com/giosantos99/dogs)
+
+---
 
 ## 🚀 Sobre o Projeto
 
 A Dogs API é responsável pelo gerenciamento de usuários, autenticação, publicações, comentários e estatísticas da aplicação Dogs.
 
-A API utiliza MongoDB Atlas para persistência dos dados, autenticação com JSON Web Token (JWT) e integração SMTP para recuperação de senhas.
+O backend utiliza **MongoDB Atlas** para persistência de dados, **JWT** para autenticação, **Cloudinary** para armazenamento de imagens e **Resend** para envio de e-mails de recuperação de senha.
 
-O desenvolvimento teve como objetivo praticar arquitetura de APIs REST, organização em camadas, autenticação, validação de dados e segurança no backend.
+A aplicação está hospedada na **Render** e integrada ao frontend React publicado na **Vercel**.
+
+O desenvolvimento teve como objetivo praticar arquitetura de APIs REST, organização em camadas, autenticação, validação de dados, integração com serviços externos, segurança e deploy de aplicações Node.js.
 
 ## 🛠️ Tecnologias Utilizadas
 
+### Backend
 - Node.js
 - Express.js
+- JavaScript (ES Modules)
 - MongoDB Atlas
 - Mongoose
-- JavaScript (ES Modules)
 - JSON Web Token (JWT)
 - bcryptjs
+
+### Upload e armazenamento
 - Multer
-- Nodemailer
-- express-rate-limit
+- Cloudinary
 - file-type
+
+### Segurança e configurações
+- express-rate-limit
 - dotenv
 - CORS
+- Node.js Crypto
+
+### Serviços e hospedagem
+- Resend — envio de e-mails
+- Render — hospedagem da API
+- Vercel — hospedagem do frontend
 
 ## ✨ Funcionalidades
 
@@ -36,15 +57,15 @@ O desenvolvimento teve como objetivo praticar arquitetura de APIs REST, organiza
 - Login com JWT
 - Validação de tokens
 - Proteção de rotas autenticadas
-- Criptografia de senhas com bcrypt
-- Validação de senhas
+- Hash de senhas com bcrypt
+- Validação de força de senha
 - Recuperação de senha por e-mail
 - Redefinição de senha com token temporário
 - Invalidação de sessões antigas após redefinição de senha
 
 ### Publicações
 
-- Upload de fotos
+- Upload de fotos para o Cloudinary
 - Validação de tipo e tamanho dos arquivos
 - Listagem de publicações
 - Paginação do feed
@@ -52,6 +73,7 @@ O desenvolvimento teve como objetivo praticar arquitetura de APIs REST, organiza
 - Visualização individual de fotos
 - Contagem de acessos
 - Exclusão de publicações pelo autor
+- Exclusão de imagens armazenadas no Cloudinary
 
 ### Interações e estatísticas
 
@@ -67,17 +89,20 @@ O desenvolvimento teve como objetivo praticar arquitetura de APIs REST, organiza
 - Hash SHA-256 dos tokens de recuperação
 - Expiração e utilização única dos tokens de recuperação
 - Invalidação de JWTs após redefinição de senha
-- Rate limiting nas rotas de autenticação e recuperação de senha
+- Rate limiting nas rotas de autenticação e recuperação
 - Validação de arquivos enviados
 - Configuração de CORS
 - Limites de tamanho para requisições JSON
 - Tratamento centralizado de erros
+- Credenciais armazenadas em variáveis de ambiente
 
 ## 📂 Estrutura do Projeto
 
 ```text
 dogs-api/
 ├── src/
+│   ├── config/
+│   │   └── cloudinary.js
 │   ├── controllers/
 │   ├── middlewares/
 │   ├── models/
@@ -88,16 +113,20 @@ dogs-api/
 ├── app.js
 ├── server.js
 ├── package.json
+├── package-lock.json
 ├── .env.example
 └── README.md
 ```
 
+**Descrição dos diretórios:**
+
+- **config:** configurações de serviços externos, como Cloudinary.
 - **controllers:** lógica das requisições e respostas.
 - **middlewares:** autenticação, upload, rate limiting e tratamento de erros.
 - **models:** modelos de dados do MongoDB.
 - **routes:** definição dos endpoints.
 - **services:** serviços auxiliares, como envio de e-mails.
-- **uploads:** armazenamento local de imagens no ambiente de desenvolvimento.
+- **uploads:** compatibilidade com imagens locais antigas.
 - **utils:** funções reutilizáveis e validações.
 
 ## 🔗 Endpoints da API
@@ -145,17 +174,17 @@ Alguns endpoints exigem autenticação via Bearer Token.
 
 ### Pré-requisitos
 
-- Node.js
-- npm
-- Banco de dados MongoDB
-- Serviço SMTP para recuperação de senhas
+- Node.js e npm
+- Banco de dados MongoDB Atlas
+- Conta no Cloudinary
+- Conta no Resend
 
 ### Instalação
 
 Clone o repositório:
 
 ```bash
-git clone https://github.com/giosantos99/dogs-api
+git clone https://github.com/giosantos99/dogs-api.git
 ```
 
 Acesse a pasta:
@@ -172,17 +201,22 @@ npm install
 
 ### Variáveis de ambiente
 
-Crie um arquivo `.env` na raiz do projeto, utilizando as seguintes variáveis:
+Crie um arquivo `.env` na raiz do projeto, utilizando `.env.example` como referência:
 
 ```dotenv
 PORT=3000
+
 MONGO_URI=sua_string_de_conexao_mongodb
 JWT_SECRET=seu_segredo_jwt
-SMTP_HOST=servidor_smtp
-SMTP_PORT=587
-SMTP_USER=seu_usuario_smtp
-SMTP_PASS=sua_senha_smtp
+
 FRONTEND_URL=http://localhost:5173
+
+CLOUDINARY_CLOUD_NAME=seu_cloud_name
+CLOUDINARY_API_KEY=sua_api_key
+CLOUDINARY_API_SECRET=seu_api_secret
+
+RESEND_API_KEY=sua_chave_resend
+RESEND_FROM_EMAIL=seu_remetente_autorizado
 ```
 
 Utilize valores próprios e seguros para cada ambiente.
@@ -217,7 +251,7 @@ Resposta esperada:
 
 ## 🔐 Autenticação
 
-A API utiliza JWT para autenticar usuários.
+A API utiliza JSON Web Token (JWT) para autenticar usuários.
 
 Após realizar o login, o cliente recebe um token que deve ser enviado nas requisições protegidas:
 
@@ -227,43 +261,114 @@ Authorization: Bearer SEU_TOKEN_JWT
 
 Os tokens possuem prazo de expiração e podem ser invalidados após a redefinição da senha por meio do controle de versão armazenado no usuário.
 
+### Recuperação de senha
+
+A recuperação de senha utiliza o Resend para envio de e-mails por API HTTPS.
+
+O processo envolve:
+
+1. Solicitação de recuperação pelo usuário.
+2. Geração de um token temporário.
+3. Armazenamento do hash SHA-256 do token no MongoDB.
+4. Envio do link de recuperação por e-mail.
+5. Validação do token e redefinição da senha.
+6. Invalidação das sessões anteriores.
+
+Os tokens de recuperação possuem validade de **30 minutos** e são de utilização única.
+
+**Observação:** para permitir o envio de e-mails a qualquer usuário em produção, é necessário configurar um domínio de envio verificado no Resend. O remetente de testes possui restrições de destinatário.
+
 ## 📤 Upload de Imagens
 
-O upload é realizado utilizando Multer.
+O upload utiliza **Multer** para receber as imagens em memória e **Cloudinary** para armazenamento na nuvem.
 
-Os arquivos passam por verificações de tamanho, tipo MIME e assinatura do arquivo.
+Antes do envio, os arquivos passam por verificações de tamanho, tipo MIME e assinatura do arquivo.
 
-Formatos aceitos:
-
+**Formatos aceitos:**
 - JPEG
 - PNG
 - WebP
 
-Tamanho máximo: **5 MB por arquivo**.
+**Tamanho máximo:** 5 MB por arquivo.
 
-No desenvolvimento local, as imagens são armazenadas no diretório `src/uploads`.
+### Fluxo de armazenamento
 
-Para ambientes de produção com sistema de arquivos temporário, é necessário utilizar armazenamento persistente.
+1. O usuário seleciona uma imagem no frontend.
+2. O Multer recebe o arquivo em memória.
+3. O backend valida o formato e o tamanho.
+4. A imagem é enviada ao Cloudinary.
+5. A URL HTTPS e o identificador público da imagem são armazenados no MongoDB.
+6. O frontend utiliza a URL do Cloudinary para exibir a foto.
 
-## 🛡️ Segurança
+Ao excluir uma publicação, a API também solicita a exclusão da imagem correspondente no Cloudinary.
+
+A aplicação mantém compatibilidade com registros de imagens locais antigas, embora os arquivos locais não sejam persistidos na hospedagem gratuita.
+
+na hospedagem gratuita.
+
+🛡️ Segurança
 
 A aplicação implementa medidas de proteção como autenticação JWT, hash de senhas, validação de entradas, controle de acesso e limitação de requisições.
 
-Os tokens de recuperação de senha são armazenados como hashes e possuem expiração de 30 minutos.
+As rotas de autenticação e recuperação de senha utilizam rate limiting para reduzir tentativas automatizadas e solicitações excessivas.
 
-As rotas de autenticação e recuperação utilizam rate limiting para reduzir tentativas automatizadas e solicitações excessivas.
+O backend também utiliza CORS para restringir as origens autorizadas a acessar a API pelo navegador.
 
+As credenciais de MongoDB, JWT, Cloudinary e Resend são armazenadas em variáveis de ambiente.
+
+## ☁️ Deploy e Hospedagem
+
+A aplicação utiliza a seguinte arquitetura:
+
+| Serviço | Responsabilidade |
+| --- | --- |
+| Vercel | Hospedagem do frontend ReactVercel |
+| Render | Hospedagem da API Node.jRenders |
+| MongoDB Atlas | Persistência dos dados |
+| Cloudinary | Armazenamento das imagens |
+| Resend | Envio de e-mails |
+
+**Backend — Render**
+
+URL: https://dogs-api-bn0r.onrender.com/
+
+Configuração utilizada:
+
+Build Command: npm ci
+Start Command: npm start
+Branch: main
+
+As credenciais e configurações de produção são cadastradas como variáveis de ambiente na Render.
+
+**Observação:** no plano gratuito da Render, a instância pode entrar em repouso após um período de inatividade. A primeira requisição após esse período pode apresentar um tempo de resposta maior.
+
+Frontend — Vercel
+```bash
+URL: https://app-dogs-social.vercel.app/
+```
+
+O frontend utiliza a variável:
+```bash
+VITE_API_URL=https://dogs-api-bn0r.onrender.com
+```
+
+No backend, o domínio autorizado é configurado por:
+```bash
+FRONTEND_URL=https://app-dogs-social.vercel.app
+```
 ## 🔗 Frontend
 
 Este backend foi desenvolvido para integração com o projeto Dogs em React.
 
-**Repositório frontend:** [Dogs App](https://github.com/giosantos99/dogs).
+Aplicação online: Dogs Social
 
-**API online:** [Adicionar link após o deploy]
+Repositório frontend: Dogs — React
 
 ## 📚 Créditos
 
-API desenvolvida como projeto de estudo independente para integração com o frontend Dogs, baseado no curso de React da [Origamid](https://www.origamid.com/).
+API desenvolvida como projeto de estudo independente para integração com o frontend Dogs, baseado no curso de React da Origamid.
+
+O frontend tem como base o projeto apresentado no curso, enquanto o backend foi desenvolvido separadamente para reproduzir e ampliar a experiência de integração com uma API própria.
 
 ## 👩‍💻 Autoria
 
