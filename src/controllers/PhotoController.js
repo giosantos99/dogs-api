@@ -1,4 +1,5 @@
-import { fileTypeFromFile } from "file-type";
+import { fileTypeFromBuffer } from "file-type";
+import cloudinary from "../config/cloudinary.js";
 import mongoose from "mongoose";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -7,8 +8,40 @@ import Photo from "../models/Photo.js";
 import Comment from "../models/Comment.js";
 import User from "../models/User.js";
 
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "dogs",
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
+        }
+
+        if (!result) {
+          return reject(new Error("Upload sem resultado."));
+        }
+
+        resolve(result);
+      },
+    );
+
+    stream.end(buffer);
+  });
+};
+
+const getImageUrl = (image, req) => {
+  if (/^https:\/\//i.test(image)) {
+    return image;
+  }
+
+  return `${req.protocol}://${req.get("host")}${image}`;
+};
 class PhotoController {
   static async store(req, res) {
+    let uploadedPublicId = null;
     let photoCreated = false;
 
     try {
@@ -44,7 +77,7 @@ class PhotoController {
         });
       }
 
-      const detectedType = await fileTypeFromFile(req.file.path);
+      const detectedType = await fileTypeFromBuffer(req.file.buffer);
 
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
@@ -58,18 +91,25 @@ class PhotoController {
         });
       }
 
+      // Enviar a imagem ao Cloudinary
+      const uploadedImage = await uploadToCloudinary(req.file.buffer);
+
+      uploadedPublicId = uploadedImage.public_id;
+
+      // Salvar os dados no MongoDB
       const photo = await Photo.create({
         name: nome.trim(),
         weight,
         age,
-        image: `/uploads/${req.file.filename}`,
+        image: uploadedImage.secure_url,
+        imagePublicId: uploadedPublicId,
         author: req.userId,
       });
 
       photoCreated = true;
 
       return res.status(201).json({
-        id: photo._id,
+        id: photo._id.toString(),
         title: photo.name,
         src: photo.image,
         peso: photo.weight,
@@ -83,13 +123,14 @@ class PhotoController {
         message: "Erro interno ao cadastrar foto.",
       });
     } finally {
-      if (req.file && !photoCreated) {
+      // Evitar imagens órfãs quando o MongoDB falhar
+      if (uploadedPublicId && !photoCreated) {
         try {
-          await fs.unlink(req.file.path);
+          await cloudinary.uploader.destroy(uploadedPublicId, {
+            resource_type: "image",
+          });
         } catch (error) {
-          if (error.code !== "ENOENT") {
-            console.error("Erro ao remover imagem rejeitada:", error);
-          }
+          console.error("Erro ao limpar imagem do Cloudinary:", error);
         }
       }
     }
@@ -149,7 +190,7 @@ class PhotoController {
         author: photo.author?.username ?? "",
         title: photo.name,
         date: String(photo.createdAt.getTime()),
-        src: `${req.protocol}://${req.get("host")}${photo.image}`,
+        src: getImageUrl(photo.image, req),
         peso: String(photo.weight),
         idade: String(photo.age),
         acessos: photo.acessos,
@@ -204,7 +245,7 @@ class PhotoController {
           author: photo.author?.username ?? "",
           title: photo.name,
           date: String(photo.createdAt.getTime()),
-          src: `${req.protocol}://${req.get("host")}${photo.image}`,
+          src: getImageUrl(photo.image, req),
           peso: String(photo.weight),
           idade: String(photo.age),
           acessos: photo.acessos,
@@ -259,7 +300,23 @@ class PhotoController {
         photo: deletedPhoto._id,
       });
 
-      if (deletedPhoto.image?.startsWith("/uploads/")) {
+      if (deletedPhoto.imagePublicId) {
+        try {
+          const result = await cloudinary.uploader.destroy(
+            deletedPhoto.imagePublicId,
+            { resource_type: "image" },
+          );
+
+          if (result.result !== "ok" && result.result !== "not found") {
+            console.error(
+              "Não foi possível remover a imagem do Cloudinary:",
+              result,
+            );
+          }
+        } catch (error) {
+          console.error("Erro ao excluir imagem do Cloudinary:", error);
+        }
+      } else if (deletedPhoto.image?.startsWith("/uploads/")) {
         const filename = path.basename(deletedPhoto.image);
         const imagePath = path.resolve("src/uploads", filename);
 
@@ -267,7 +324,7 @@ class PhotoController {
           await fs.unlink(imagePath);
         } catch (error) {
           if (error.code !== "ENOENT") {
-            console.error("Erro ao excluir arquivo da imagem:", error);
+            console.error("Erro ao excluir arquivo local:", error);
           }
         }
       }
